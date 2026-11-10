@@ -1,0 +1,622 @@
+import { FormEvent, useEffect, useState } from "react";
+import { CalendarDays, KeyRound, RefreshCw, UserCircle2, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { dotNet10ApiFetch } from "../../data/api";
+import { AUTH_TOKEN_KEY } from "../../utils/authStorage";
+import {
+  getCurrentJalaliDateString,
+  PersianDatePicker,
+} from "../sabtdarkhast/PersianDatePicker";
+
+const REGISTER_ENDPOINT = "/api/auth";
+const MODAL_PANEL_CLASS =
+  "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+.5rem)] z-[90] mx-auto flex h-fit max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem)] w-[calc(100vw_-_1.5rem)] flex-col overflow-y-auto overscroll-contain rounded-2xl border border-border/70 bg-card/95 p-3 shadow-[0_30px_80px_rgba(6,31,27,0.32)] backdrop-blur-xl sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))] sm:max-h-[calc(100dvh_-_2rem)] sm:w-[calc(100vw_-_2rem)] sm:rounded-3xl sm:p-5 lg:p-6";
+
+const extractRegisterError = (data: any) => {
+  if (!data) return "";
+
+  if (typeof data === "string") return data;
+
+  if (data.Message) return String(data.Message);
+  if (data.message) return String(data.message);
+  if (data.error) return String(data.error);
+
+  const modelState = data.ModelState ?? data.modelState;
+  if (modelState && typeof modelState === "object") {
+    const messages = Object.values(modelState)
+      .flat()
+      .filter(Boolean)
+      .map(String);
+
+    if (messages.length) return messages.join(" ");
+  }
+
+  return "";
+};
+
+interface LoginModalProps {
+  isOpen: boolean;
+  presentation?: "modal" | "page";
+  hideCloseButton?: boolean;
+  loginType: "user" | "admin";
+  username: string;
+  password: string;
+  nationalCode: string;
+  mobile: string;
+  loginError: string;
+  loginLoading: boolean;
+  onClose: () => void;
+  onUsernameChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onNationalCodeChange: (value: string) => void;
+  onMobileChange: (value: string) => void;
+  onSmsSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onPasswordSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onForgotPassword: () => void;
+}
+
+export function LoginModal({
+  isOpen,
+  presentation = "modal",
+  hideCloseButton = false,
+  loginType,
+  username,
+  password,
+  nationalCode,
+  mobile,
+  loginError,
+  loginLoading,
+  onClose,
+  onUsernameChange,
+  onPasswordChange,
+  onNationalCodeChange,
+  onMobileChange,
+  onSmsSubmit,
+  onPasswordSubmit,
+  onForgotPassword,
+}: LoginModalProps) {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [authMode, setAuthMode] = useState<"sms" | "password">("sms");
+  const [regUsername, setRegUsername] = useState("");
+  const [regNationalCode, setRegNationalCode] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regAddress, setRegAddress] = useState("");
+  const [regBirthDay, setRegBirthDay] = useState(getCurrentJalaliDateString);
+  const [isBirthDateOpen, setIsBirthDateOpen] = useState(false);
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [regError, setRegError] = useState("");
+  const [regLoading, setRegLoading] = useState(false);
+  const [regSuccess, setRegSuccess] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setAuthMode("sms");
+    setIsRegistering(false);
+  }, [isOpen]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {presentation === "modal" ? (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 z-[85] bg-black/45 backdrop-blur-[2px]"
+              aria-label="بستن فرم ورود"
+            />
+          ) : null}
+
+          <motion.section
+            role={presentation === "modal" ? "dialog" : "region"}
+            aria-modal={presentation === "modal" ? "true" : undefined}
+            aria-label="فرم ورود"
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            className={`${
+              presentation === "modal"
+                ? MODAL_PANEL_CLASS
+                : "relative mx-auto flex w-full flex-col overflow-y-auto overscroll-contain rounded-2xl border border-border/70 bg-card/95 p-3 shadow-[0_30px_80px_rgba(6,31,27,0.18)] backdrop-blur-xl sm:rounded-3xl sm:p-5 lg:p-6"
+            } ${isRegistering ? "max-w-2xl" : "max-w-md"}`}
+          >
+            <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    loginType === "admin"
+                      ? "bg-amber-500/10 text-amber-600"
+                      : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {loginType === "admin" ? (
+                    <KeyRound className="h-5 w-5" />
+                  ) : (
+                    <UserCircle2 className="h-5 w-5" />
+                  )}
+                </span>
+
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-foreground">
+                    ورود به حساب کاربری
+                  </h3>
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    دسترسی به خدمات پرتال شهروند
+                  </p>
+                </div>
+              </div>
+
+              {!hideCloseButton ? (
+                <button
+                  onClick={onClose}
+                  className="shrink-0 rounded-full p-1 transition-colors hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+
+            {!isRegistering ? (
+              <form
+                onSubmit={
+                  authMode === "sms" ? onSmsSubmit : onPasswordSubmit
+                }
+                className="space-y-3"
+              >
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode("sms")}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                      authMode === "sms"
+                        ? "bg-background text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    کد ملی
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode("password")}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                      authMode === "password"
+                        ? "bg-background text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    نام کاربری
+                  </button>
+                </div>
+
+                {authMode === "sms" ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                        کد ملی
+                      </label>
+                      <input
+                        value={nationalCode}
+                        onChange={(e) => onNationalCodeChange(e.target.value)}
+                        placeholder="مثال: 0012345678"
+                        inputMode="numeric"
+                        disabled={loginLoading}
+                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                        شماره موبایل
+                      </label>
+                      <input
+                        value={mobile}
+                        onChange={(e) => onMobileChange(e.target.value)}
+                        placeholder="09xxxxxxxxx"
+                        inputMode="tel"
+                        dir="ltr"
+                        disabled={loginLoading}
+                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-left text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                        نام کاربری
+                      </label>
+                      <input
+                        value={username}
+                        onChange={(e) => onUsernameChange(e.target.value)}
+                        placeholder="مثال: Armin"
+                        disabled={loginLoading}
+                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[11px] font-medium text-muted-foreground">
+                          رمز عبور
+                        </label>
+                        {/*
+                        <button
+                          type="button"
+                          onClick={onForgotPassword}
+                          className="text-[11px] font-semibold text-primary hover:underline"
+                        >
+                          فراموشی رمز عبور؟
+                        </button>
+                        */}
+                      </div>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => onPasswordChange(e.target.value)}
+                        placeholder="••••••••"
+                        disabled={loginLoading}
+                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {loginError ? (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                  >
+                    {loginError}
+                  </motion.p>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="btn-gradient flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-primary-foreground transition-all active:scale-[0.98] disabled:opacity-60"
+                >
+                  {loginLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      در حال ورود...
+                    </>
+                  ) : authMode === "sms" ? (
+                    "دریافت کد ورود"
+                  ) : (
+                    "ورود با نام کاربری"
+                  )}
+                </button>
+
+                
+              </form>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setRegError("");
+                  setRegSuccess("");
+
+                  if (!regUsername.trim()) {
+                    setRegError("نام کاربری را وارد کنید.");
+                    return;
+                  }
+                  if (!/^\d{10}$/.test(regNationalCode)) {
+                    setRegError("کد ملی باید ۱۰ رقم باشد.");
+                    return;
+                  }
+                  if (!/^(09)\d{9}$/.test(regPhone)) {
+                    setRegError("شماره موبایل معتبر نیست.");
+                    return;
+                  }
+                  if (
+                    regEmail.trim() &&
+                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())
+                  ) {
+                    setRegError("ایمیل وارد شده معتبر نیست.");
+                    return;
+                  }
+                  if (!regFirstName.trim() || !regLastName.trim()) {
+                    setRegError("نام و نام خانوادگی را وارد کنید.");
+                    return;
+                  }
+                  if (!/^\d{4}\/\d{2}\/\d{2}$/.test(regBirthDay)) {
+                    setRegError("تاریخ تولد شمسی را انتخاب کنید.");
+                    return;
+                  }
+                  if (regPassword.length < 3) {
+                    setRegError("رمز عبور باید حداقل ۳ کاراکتر باشد.");
+                    return;
+                  }
+                  if (regPassword !== regConfirmPassword) {
+                    setRegError("رمز عبور و تکرار آن یکسان نیستند.");
+                    return;
+                  }
+
+                  setRegLoading(true);
+                  try {
+                    const registerUsername = regUsername.trim();
+                    const registerPassword = regPassword;
+                    const registerEmail = regEmail.trim();
+                    const authToken = localStorage
+                      .getItem(AUTH_TOKEN_KEY)
+                      ?.replace(/^Bearer\s+/i, "");
+                    const response = await dotNet10ApiFetch(REGISTER_ENDPOINT, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Accept: "*/*",
+                        ...(authToken
+                          ? { Authorization: `Bearer ${authToken}` }
+                          : {}),
+                      },
+                      body: JSON.stringify({
+                        name: regFirstName.trim(),
+                        family: regLastName.trim(),
+                        userName: registerUsername,
+                        nationalCode: regNationalCode.trim(),
+                        phoneNumber: regPhone.trim(),
+                        password: registerPassword,
+                        repeatPassword: regConfirmPassword,
+                        ...(registerEmail ? { email: registerEmail } : {}),
+                        address: regAddress.trim(),
+                        birthDay: regBirthDay,
+                      }),
+                    });
+
+                    const data = await response.json().catch(() => null);
+                    const registrationSucceeded =
+                      response.ok &&
+                      data?.isSuccess !== false &&
+                      data?.isFailure !== true;
+
+                    if (registrationSucceeded) {
+                      setRegSuccess(
+                        "ثبت نام با موفقیت انجام شد. لطفا وارد شوید.",
+                      );
+                      onUsernameChange(registerUsername);
+                      onPasswordChange(registerPassword);
+                      setRegUsername("");
+                      setRegNationalCode("");
+                      setRegPhone("");
+                      setRegEmail("");
+                      setRegFirstName("");
+                      setRegLastName("");
+                      setRegAddress("");
+                      setRegBirthDay(getCurrentJalaliDateString());
+                      setRegPassword("");
+                      setRegConfirmPassword("");
+                      setIsRegistering(false);
+                    } else {
+                      setRegError(
+                        extractRegisterError(data) ||
+                          (response.status === 401
+                            ? "مجوز ثبت‌نام معتبر نیست. لطفاً با حساب مدیر وارد شوید یا تنظیمات دسترسی API را بررسی کنید."
+                            : "خطا در ثبت نام. لطفا مجددا تلاش کنید."),
+                      );
+                    }
+                  } catch (err) {
+                    setRegError("خطا در اتصال به سرور. لطفا دوباره تلاش کنید.");
+                  } finally {
+                    setRegLoading(false);
+                  }
+                }}
+                className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2"
+              >
+                <div className="space-y-1">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    نام کاربری
+                  </label>
+                  <input
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    placeholder="مثال: 0012345678"
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    کد ملی
+                  </label>
+                  <input
+                    value={regNationalCode}
+                    onChange={(e) => setRegNationalCode(e.target.value)}
+                    placeholder="مثال: 0012345678"
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    شماره موبایل
+                  </label>
+                  <input
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    placeholder="09xxxxxxxxx"
+                    dir="ltr"
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-left text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    ایمیل
+                  </label>
+                  <input
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="example@email.com"
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 min-[380px]:col-span-2 min-[380px]:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                      نام
+                    </label>
+                    <input
+                      value={regFirstName}
+                      onChange={(e) => setRegFirstName(e.target.value)}
+                      disabled={regLoading}
+                      className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                      نام خانوادگی
+                    </label>
+                    <input
+                      value={regLastName}
+                      onChange={(e) => setRegLastName(e.target.value)}
+                      disabled={regLoading}
+                      className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 min-[380px]:col-span-2">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    آدرس
+                  </label>
+                  <input
+                    value={regAddress}
+                    onChange={(e) => setRegAddress(e.target.value)}
+                    placeholder="نشانی محل سکونت"
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="relative space-y-1 min-[380px]:col-span-2">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    تاریخ تولد
+                  </label>
+                  <button
+                    type="button"
+                    dir="ltr"
+                    onClick={() => setIsBirthDateOpen((open) => !open)}
+                    disabled={regLoading}
+                    className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  >
+                    <span>{regBirthDay}</span>
+                    <CalendarDays className="h-4 w-4 text-primary" />
+                  </button>
+                  <AnimatePresence>
+                    {isBirthDateOpen && (
+                      <div className="relative z-20 pt-1 sm:absolute sm:inset-x-0 sm:top-full">
+                        <PersianDatePicker
+                          value={regBirthDay}
+                          onChange={setRegBirthDay}
+                          onClose={() => setIsBirthDateOpen(false)}
+                        />
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    رمز عبور
+                  </label>
+                  <input
+                    type="password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="حداقل ۳ کاراکتر"
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="pr-1 text-[11px] font-medium text-muted-foreground">
+                    تکرار رمز عبور
+                  </label>
+                  <input
+                    type="password"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    disabled={regLoading}
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                </div>
+
+                {regError ? (
+                  <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive min-[380px]:col-span-2">
+                    {regError}
+                  </p>
+                ) : null}
+
+                {regSuccess ? (
+                  <p className="rounded-xl border border-success/30 bg-success/10 px-3 py-2 text-xs text-success min-[380px]:col-span-2">
+                    {regSuccess}
+                  </p>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={regLoading}
+                  className="btn-gradient flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-primary-foreground transition-all active:scale-[0.98] disabled:opacity-60 min-[380px]:col-span-2"
+                >
+                  {regLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      در حال ثبت‌نام...
+                    </>
+                  ) : (
+                    "ثبت‌نام"
+                  )}
+                </button>
+              </form>
+            )}
+
+            {regSuccess && !isRegistering ? (
+              <p className="mt-3 rounded-xl border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
+                {regSuccess}
+              </p>
+            ) : null}
+
+            <div className="mt-3 text-center text-[13px]">
+              {!isRegistering ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegistering(true);
+                    setRegError("");
+                    setRegSuccess("");
+                  }}
+                  className="text-primary font-semibold hover:underline"
+                >
+                  هنوز ثبت‌نام نکرده‌اید؟ ثبت‌نام
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsRegistering(false)}
+                  className="text-muted-foreground hover:underline"
+                >
+                  بازگشت به ورود
+                </button>
+              )}
+            </div>
+          </motion.section>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

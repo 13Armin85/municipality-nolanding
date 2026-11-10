@@ -1,0 +1,51 @@
+// src/data/Useretreatdata.ts
+
+import { useCallback, useState } from "react";
+
+import { fetchRetreatData, type RetreatData } from "./retreat";
+
+interface UseRetreatDataResult {
+  data: RetreatData | null;
+  loading: boolean;
+  error: string | null;
+  refetch: (codeNosazi: string, token: string) => Promise<void>;
+  reset: () => void;
+}
+
+export const useRetreatData = (): UseRetreatDataResult => {
+  const [data, setData] = useState<RetreatData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(async (codeNosazi: string, token: string) => {
+    if (!codeNosazi.trim()) {
+      setError("کد نوسازی الزامی است");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      setData(await fetchRetreatData(codeNosazi, token));
+    } catch {
+      setError("خطا در دریافت اطلاعات عقب‌نشینی");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    setData(null);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  return {
+    data,
+    loading,
+    error,
+    refetch,
+    reset,
+  };
+};

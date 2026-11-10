@@ -1,0 +1,649 @@
+import { motion } from "motion/react";
+import {
+  AlertCircle,
+  Building2,
+  ChevronDown,
+  ClipboardList,
+  Layers,
+  Search,
+  User,
+} from "lucide-react";
+import { guildCodeFields, type RenewalCodes } from "../../data/properties";
+import {
+  PropertyTreeList,
+  type PropertyItem,
+  type PropertyTreeItem,
+} from "../../components/PropertyTreeList";
+import {
+  DateField,
+  EditableField,
+  HelpButton,
+  SectionHeader,
+  SelectionField,
+} from "./FormControls";
+import {
+  ApplicantFormState,
+  BuyerFormState,
+  ComplementaryFormState,
+  FormErrors,
+  OwnerFormState,
+  RequestFormState,
+} from "./types";
+
+interface SabtdarkhastFormPrimaryProps {
+  showErrors: boolean;
+  errors: FormErrors;
+  searchValues: RenewalCodes;
+  ownerForm: OwnerFormState;
+  requestForm: RequestFormState;
+  applicantForm: ApplicantFormState;
+  complementaryForm: ComplementaryFormState;
+  buyerForm: BuyerFormState;
+  vakadari: string;
+  activeDatePicker: string | null;
+  requestTypeItems: string[];
+  applicantTypeItems: string[];
+  officeItems: string[];
+  onOpenHelp: (title: string, description: string) => void;
+  onSearch: () => void;
+  onSearchValuesChange: (values: RenewalCodes) => void;
+  onPropertyTreeSelect: (
+    property: PropertyItem,
+    treeItem: PropertyTreeItem,
+  ) => void;
+  setOwnerForm: (value: OwnerFormState) => void;
+  setRequestForm: (value: RequestFormState) => void;
+  setApplicantForm: (value: ApplicantFormState) => void;
+  setComplementaryForm: (value: ComplementaryFormState) => void;
+  setBuyerForm: (value: BuyerFormState) => void;
+  setVakadari: (value: string) => void;
+  setActiveDatePicker: (value: string | null) => void;
+  clearError: (errorKey: string) => void;
+  openSelection: (
+    title: string,
+    items: string[],
+    onSelect: (value: string) => void,
+  ) => void;
+  onContinue: () => void;
+  submitError: string;
+  isSubmitting: boolean;
+}
+
+export function SabtdarkhastFormPrimary({
+  showErrors,
+  errors,
+  searchValues,
+  ownerForm,
+  requestForm,
+  applicantForm,
+  complementaryForm,
+  buyerForm,
+  vakadari,
+  activeDatePicker,
+  requestTypeItems,
+  applicantTypeItems,
+  officeItems,
+  onOpenHelp,
+  onSearch,
+  onSearchValuesChange,
+  onPropertyTreeSelect,
+  setOwnerForm,
+  setRequestForm,
+  setApplicantForm,
+  setComplementaryForm,
+  setBuyerForm,
+  setVakadari,
+  setActiveDatePicker,
+  clearError,
+  openSelection,
+  onContinue,
+  submitError,
+  isSubmitting,
+}: SabtdarkhastFormPrimaryProps) {
+  const getIdentityLabel = (identityType: "1" | "2") =>
+    identityType === "1" ? "کد ملی" : "شناسه ملی";
+
+  return (
+    <>
+      {showErrors && Object.keys(errors).length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="flex items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive"
+        >
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          لطفاً فیلدهای اجباری مشخص شده را تکمیل کنید.
+        </motion.div>
+      )}
+
+      <motion.article
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="soft-card mesh-panel overflow-visible"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">جستجو</h2>
+          </div>
+          <HelpButton
+            title="جستجو"
+            desc="کد نوسازی را در بخش‌های مشخص‌شده وارد کنید و جستجو را بزنید، یا از لیست پرونده‌های زیرمجموعه یک پرونده انتخاب کنید تا اطلاعات مالک و فرم درخواست برای همان ملک آماده شود."
+            onOpenHelp={onOpenHelp}
+          />
+        </div>
+        <div className="p-3 sm:p-4">
+          <button
+            onClick={onSearch}
+            className="mb-3 flex h-10 w-full items-center justify-center rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95 sm:hidden"
+          >
+            <Search className="ml-1.5 h-4 w-4" /> جستجو
+          </button>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-8">
+            <button
+              onClick={onSearch}
+              className="hidden h-11 items-center justify-center rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95 md:flex"
+            >
+              <Search className="ml-1.5 h-4 w-4" /> جستجو
+            </button>
+            {guildCodeFields.map((field) => (
+              <div key={field.key} className="relative">
+                <input
+                  value={searchValues[field.key]}
+                  onChange={(e) =>
+                    onSearchValuesChange({
+                      ...searchValues,
+                      [field.key]: e.target.value,
+                    } as RenewalCodes)
+                  }
+                  className="h-10 w-full rounded-xl border border-border/70 bg-card px-2 text-center text-xs font-medium outline-none transition-colors focus:border-primary sm:h-11 sm:text-sm"
+                  dir="ltr"
+                />
+                <span className="absolute -top-2 right-2 bg-card px-1 text-[8px] text-muted-foreground sm:text-[9px]">
+                  {field.label}
+                </span>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={onSearch}
+            className="mt-2 hidden h-10 w-full items-center justify-center rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95 sm:flex md:hidden"
+          >
+            <Search className="ml-1.5 h-4 w-4" /> جستجو
+          </button>
+        </div>
+      </motion.article>
+
+      <motion.article
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="soft-card mesh-panel overflow-hidden"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold">پرونده‌های زیرمجموعه</h2>
+          </div>
+          <HelpButton
+            title="پرونده‌ها"
+            desc="لیست املاک و پرونده‌های زیرمجموعه شما در این بخش نمایش داده می‌شود. با انتخاب هر پرونده، کد نوسازی و اطلاعات مرتبط آن برای ثبت درخواست در فرم استفاده می‌شود."
+            onOpenHelp={onOpenHelp}
+          />
+        </div>
+        <div className="p-4">
+          <PropertyTreeList onPropertySelect={onPropertyTreeSelect} compact />
+        </div>
+      </motion.article>
+
+      <motion.article
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="soft-card mesh-panel overflow-visible"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold">ثبت درخواست</h2>
+          </div>
+          <HelpButton
+            title="ثبت درخواست "
+            desc="اطلاعات مالک، نوع درخواست، مشخصات متقاضی و اطلاعات تکمیلی را تکمیل کنید. فیلدهای ستاره‌دار اجباری هستند و پس از تکمیل، با ادامه دادن وارد مرحله بارگذاری مدارک می‌شوید."
+            onOpenHelp={onOpenHelp}
+          />
+        </div>
+
+        <div className="space-y-6 p-3 sm:space-y-8 sm:p-4">
+          <div>
+            <SectionHeader icon={User} title="اطلاعات مالک" />
+            <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-4">
+              <div className="col-span-1 flex items-center gap-4 text-xs text-muted-foreground sm:col-span-2 md:col-span-4">
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="malek-type"
+                    checked={ownerForm.identityType === "1"}
+                    onChange={() =>
+                      setOwnerForm({ ...ownerForm, identityType: "1" })
+                    }
+                    className="accent-primary"
+                  />{" "}
+                  کد ملی
+                </label>
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="malek-type"
+                    checked={ownerForm.identityType === "2"}
+                    onChange={() =>
+                      setOwnerForm({ ...ownerForm, identityType: "2" })
+                    }
+                    className="accent-primary"
+                  />{" "}
+                  شناسه ملی
+                </label>
+              </div>
+              <EditableField
+                label={getIdentityLabel(ownerForm.identityType)}
+                required
+                value={ownerForm.nationalId}
+                onChange={(v) => setOwnerForm({ ...ownerForm, nationalId: v })}
+                errorKey="owner.nationalId"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="نام مالک"
+                required
+                value={ownerForm.name}
+                onChange={(v) => setOwnerForm({ ...ownerForm, name: v })}
+                errorKey="owner.name"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="شماره همراه"
+                required
+                value={ownerForm.phone}
+                onChange={(v) => setOwnerForm({ ...ownerForm, phone: v })}
+                errorKey="owner.phone"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="کد پستی"
+                value={ownerForm.postalCode}
+                onChange={(v) => setOwnerForm({ ...ownerForm, postalCode: v })}
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <div className="relative col-span-1 sm:col-span-2 md:col-span-4">
+                <input
+                  value={ownerForm.address}
+                  onChange={(e) =>
+                    setOwnerForm({ ...ownerForm, address: e.target.value })
+                  }
+                  className="h-10 w-full rounded-xl border border-border/70 bg-card px-3 text-sm outline-none transition-colors focus:border-primary"
+                />
+                <span className="absolute -top-2.5 right-3 bg-card px-1 text-[10px] text-muted-foreground">
+                  نشانی مالک
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={ClipboardList} title="اطلاعات درخواست" />
+            <div className="col-span-1 flex items-center gap-4 text-xs text-muted-foreground sm:col-span-2 md:col-span-4">
+              <label className="flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="applicant-type"
+                  checked={applicantForm.identityType === "1"}
+                  onChange={() =>
+                    setApplicantForm({
+                      ...applicantForm,
+                      identityType: "1",
+                    })
+                  }
+                  className="accent-primary"
+                />{" "}
+                کد ملی
+              </label>
+              <label className="flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="applicant-type"
+                  checked={applicantForm.identityType === "2"}
+                  onChange={() =>
+                    setApplicantForm({
+                      ...applicantForm,
+                      identityType: "2",
+                    })
+                  }
+                  className="accent-primary"
+                />{" "}
+                شناسه ملی
+              </label>
+            </div>
+            <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-4 mt-[22px]">
+              <EditableField
+                label="شماره درخواست"
+                required
+                value={requestForm.id}
+                onChange={(v) => setRequestForm({ ...requestForm, id: v })}
+                readOnly
+                errorKey="request.id"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <SelectionField
+                label="نوع درخواست"
+                required
+                value={requestForm.type}
+                onChange={(v) => setRequestForm({ ...requestForm, type: v })}
+                items={requestTypeItems}
+                title="انتخاب نوع درخواست"
+                errorKey="request.type"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+                openSelection={openSelection}
+              />
+              <SelectionField
+                label="نوع متقاضی"
+                required
+                value={requestForm.applicantType}
+                onChange={(v) =>
+                  setRequestForm({ ...requestForm, applicantType: v })
+                }
+                items={applicantTypeItems}
+                title="انتخاب نوع متقاضی"
+                errorKey="request.applicantType"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+                openSelection={openSelection}
+              />
+
+              <EditableField
+                label={getIdentityLabel(applicantForm.identityType)}
+                required
+                value={applicantForm.nationalId}
+                onChange={(v) =>
+                  setApplicantForm({ ...applicantForm, nationalId: v })
+                }
+                errorKey="applicant.nationalId"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={User} title="اطلاعات متقاضی" />
+            <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-4">
+              <EditableField
+                label="نام متقاضی"
+                required
+                value={applicantForm.name}
+                onChange={(v) =>
+                  setApplicantForm({ ...applicantForm, name: v })
+                }
+                errorKey="applicant.name"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="شماره همراه"
+                required
+                value={applicantForm.phone}
+                onChange={(v) =>
+                  setApplicantForm({ ...applicantForm, phone: v })
+                }
+                errorKey="applicant.phone"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="کد پستی متقاضی"
+                value={applicantForm.postalCode}
+                onChange={(v) =>
+                  setApplicantForm({ ...applicantForm, postalCode: v })
+                }
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <div className="relative">
+                <select
+                  value={vakadari}
+                  onChange={(e) => setVakadari(e.target.value)}
+                  className="h-10 w-full appearance-none rounded-xl border border-border/70 bg-card px-3 text-sm outline-none"
+                >
+                  <option value="">انتخاب کنید</option>
+                  <option value="1">مالک</option>
+                  <option value="2">مستاجر</option>
+                  <option value="3">وکیل</option>
+                </select>
+                <span className="absolute -top-2.5 right-3 bg-card px-1 text-[10px] text-muted-foreground">
+                  نوع واگذاری
+                </span>
+                <ChevronDown className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              </div>
+              <div className="relative col-span-1 sm:col-span-2 md:col-span-4">
+                <input
+                  value={applicantForm.address}
+                  onChange={(e) =>
+                    setApplicantForm({
+                      ...applicantForm,
+                      address: e.target.value,
+                    })
+                  }
+                  className="h-10 w-full rounded-xl border border-border/70 bg-card px-3 text-sm outline-none transition-colors focus:border-primary"
+                />
+                <span className="absolute -top-2.5 right-3 bg-card px-1 text-[10px] text-muted-foreground">
+                  نشانی متقاضی
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={User} title="اطلاعات خریدار" />
+            <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2 md:grid-cols-4">
+              <div className="col-span-1 flex items-center gap-4 text-xs text-muted-foreground sm:col-span-2 md:col-span-4">
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="buyer-type"
+                    checked={buyerForm.identityType === "1"}
+                    onChange={() =>
+                      setBuyerForm({ ...buyerForm, identityType: "1" })
+                    }
+                    className="accent-primary"
+                  />{" "}
+                  کد ملی
+                </label>
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="buyer-type"
+                    checked={buyerForm.identityType === "2"}
+                    onChange={() =>
+                      setBuyerForm({ ...buyerForm, identityType: "2" })
+                    }
+                    className="accent-primary"
+                  />{" "}
+                  شناسه ملی
+                </label>
+              </div>
+              <EditableField
+                label={getIdentityLabel(buyerForm.identityType)}
+                value={buyerForm.nationalId}
+                onChange={(v) => setBuyerForm({ ...buyerForm, nationalId: v })}
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="نام خریدار"
+                value={buyerForm.name}
+                onChange={(v) => setBuyerForm({ ...buyerForm, name: v })}
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="موبایل خریدار"
+                value={buyerForm.phone}
+                onChange={(v) => setBuyerForm({ ...buyerForm, phone: v })}
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="سهم مورد انتقال"
+                value={buyerForm.transferShare}
+                onChange={(v) =>
+                  setBuyerForm({ ...buyerForm, transferShare: v })
+                }
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+              <EditableField
+                label="سهم کل مورد انتقال"
+                value={buyerForm.totalTransferShare}
+                onChange={(v) =>
+                  setBuyerForm({ ...buyerForm, totalTransferShare: v })
+                }
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+              />
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={Building2} title="اطلاعات تکمیلی" />
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2">
+                <EditableField
+                  label="شماره نامه"
+                  value={complementaryForm.letterNo}
+                  onChange={(v) =>
+                    setComplementaryForm({ ...complementaryForm, letterNo: v })
+                  }
+                  showErrors={showErrors}
+                  errors={errors}
+                  clearError={clearError}
+                />
+                <DateField
+                  label="تاریخ نامه"
+                  value={complementaryForm.letterDate}
+                  onChange={(v) =>
+                    setComplementaryForm({
+                      ...complementaryForm,
+                      letterDate: v,
+                    })
+                  }
+                  pickerId="letterDate"
+                  activeDatePicker={activeDatePicker}
+                  setActiveDatePicker={setActiveDatePicker}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:grid-cols-2">
+                <EditableField
+                  label="شماره دبیرخانه"
+                  value={complementaryForm.secretNo}
+                  onChange={(v) =>
+                    setComplementaryForm({ ...complementaryForm, secretNo: v })
+                  }
+                  showErrors={showErrors}
+                  errors={errors}
+                  clearError={clearError}
+                />
+                <DateField
+                  label="تاریخ دبیرخانه"
+                  value={complementaryForm.secretDate}
+                  onChange={(v) =>
+                    setComplementaryForm({
+                      ...complementaryForm,
+                      secretDate: v,
+                    })
+                  }
+                  pickerId="secretDate"
+                  activeDatePicker={activeDatePicker}
+                  setActiveDatePicker={setActiveDatePicker}
+                />
+              </div>
+              <SelectionField
+                label="اداره استعلام کننده"
+                value={complementaryForm.office}
+                onChange={(v) =>
+                  setComplementaryForm({ ...complementaryForm, office: v })
+                }
+                items={officeItems}
+                title="انتخاب اداره استعلام کننده"
+                errorKey="complementary.office"
+                showErrors={showErrors}
+                errors={errors}
+                clearError={clearError}
+                openSelection={openSelection}
+              />
+              <div className="relative">
+                <textarea
+                  value={complementaryForm.desc}
+                  onChange={(e) =>
+                    setComplementaryForm({
+                      ...complementaryForm,
+                      desc: e.target.value,
+                    })
+                  }
+                  className="min-h-24 w-full resize-y rounded-xl border border-border/70 bg-card px-3 py-3 text-sm outline-none transition-colors focus:border-primary"
+                />
+                <span className="absolute -top-2.5 right-3 bg-card px-1 text-[10px] text-muted-foreground">
+                  توضیحات
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-stretch justify-start gap-3 border-t border-border/50 pt-2 sm:flex-row sm:items-center">
+            {submitError && (
+              <p className="flex items-center gap-1.5 text-xs text-destructive sm:ml-auto">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {submitError}
+              </p>
+            )}
+            <button
+              onClick={onContinue}
+              disabled={isSubmitting}
+              className="rounded-xl bg-primary px-8 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? "در حال ثبت..." : "ثبت درخواست"}
+            </button>
+            <button
+              disabled={isSubmitting}
+              className="rounded-xl border border-destructive/40 bg-destructive/5 px-6 py-2.5 text-sm font-semibold text-destructive transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              انصراف
+            </button>
+          </div>
+        </div>
+      </motion.article>
+    </>
+  );
+}
