@@ -55,12 +55,34 @@ test("late fees and localized amounts contribute to the total in rials", () => {
   assert.equal(getReceiptTotal(result.receipt), 2550000);
 });
 
+test("Inquiry decimal amounts display both charges and their total and preserve identifiers", () => {
+  const result = parse({
+    Price: "9700802.0000", DelayedPrice: "881891.0000", PaymentStatus: "False",
+    ShenaseGhabz: "0012345678901", ShenasePardakht: "0009876543210",
+  });
+  assert.equal(result.success, true);
+  assert.equal(result.receipt.Price, 9700802);
+  assert.equal(result.receipt.DelayedPrice, 881891);
+  assert.equal(getReceiptTotal(result.receipt), 10582693);
+  assert.equal(getReceiptPaymentStatus(result.receipt.PaymentStatus), "unpaid");
+  assert.equal(result.receipt.ShenaseGhabz, "0012345678901");
+  assert.equal(result.receipt.ShenasePardakht, "0009876543210");
+});
+
+test("whole-rial decimal amounts accept zero, localized digits and safe integer boundaries", () => {
+  assert.equal(getReceiptTotal(parse({ Price: "0.0000", DelayedPrice: "0.0000" }).receipt), 0);
+  assert.equal(getReceiptTotal(parse({ Price: "۹٬۷۰۰٬۸۰۲.۰۰۰۰", DelayedPrice: "٨٨١٨٩١.٠٠٠٠" }).receipt), 10582693);
+  assert.equal(getReceiptTotal(parse({ Price: "9007199254740991.0000" }).receipt), Number.MAX_SAFE_INTEGER);
+});
+
 test("invalid, negative, fractional and unsafe amounts stay invalid", () => {
-  for (const value of ["", "-1", "1.5", "Infinity", "NaN", "1e6", "0xFF", "abc", "9007199254740992"]) {
+  for (const value of ["", "-1", "1.5", "1.0001", "1.0000000000000001", "1.", ".0", "Infinity", "NaN", "1e6", "0xFF", "abc", "9007199254740992", "9007199254740992.0000"]) {
     assert.equal(getReceiptTotal(parse({ Price: value }).receipt), null, value);
   }
   assert.equal(getReceiptTotal(parse({ DelayedPrice: "invalid" }).receipt), null);
+  assert.equal(getReceiptTotal(parse({ DelayedPrice: "0.0001" }).receipt), null);
   assert.equal(getReceiptTotal(parse({ Price: String(Number.MAX_SAFE_INTEGER), DelayedPrice: "1" }).receipt), null);
+  assert.equal(getReceiptTotal(parse({ Price: "9007199254740991.0000", DelayedPrice: "1.0000" }).receipt), null);
   assert.equal(getReceiptTotal(parse({ Price: "0" }).receipt), 0);
 });
 

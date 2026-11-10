@@ -13,6 +13,7 @@ import {
 import {
   extractPaymentIdentifiers, redirectToPaymentGateway, requestPaymentToken,
 } from "../services/paymentService";
+import { canRefreshReceipt, fetchReceiptDetails } from "../data/receiptInquiry";
 import "./receipt.css";
 
 interface ReceiptPageProps {
@@ -21,7 +22,7 @@ interface ReceiptPageProps {
 }
 
 const money = (value: number | null) => value === null ? "—" : value.toLocaleString("fa-IR");
-const display = (value: string) => value || "—";
+const display = (value: string) => value || "ثبت نشده";
 
 function Detail({ label, value, numeric = false }: {
   label: string; value: string; numeric?: boolean;
@@ -38,7 +39,7 @@ function SectionTitle({ icon, children }: { icon: ReactNode; children: ReactNode
   return <h2 className="receipt-section-title"><span aria-hidden="true">{icon}</span>{children}</h2>;
 }
 
-function ReceiptContent({ receipt }: { receipt: ReceiptDetails }) {
+function ReceiptContent({ receipt, isRefreshing }: { receipt: ReceiptDetails; isRefreshing: boolean }) {
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const paymentAttempt = useRef(0);
@@ -47,7 +48,9 @@ function ReceiptContent({ receipt }: { receipt: ReceiptDetails }) {
   const isPaid = status === "paid";
   const identifiers = extractPaymentIdentifiers(receipt);
   const total = getReceiptTotal(receipt);
-  const paymentIssue = isPaid
+  const paymentIssue = isRefreshing
+    ? "در حال دریافت آخرین اطلاعات قبض…"
+    : isPaid
     ? "این قبض قبلاً پرداخت شده است و نیازی به پرداخت دوباره ندارد."
     : status === "unknown"
       ? "وضعیت پرداخت در لینک مشخص نیست؛ لطفاً قبض را دوباره استعلام کنید."
@@ -104,7 +107,7 @@ function ReceiptContent({ receipt }: { receipt: ReceiptDetails }) {
         <section aria-labelledby="receipt-owner-heading">
           <SectionTitle icon={<UserRound size={18} />}><span id="receipt-owner-heading">اطلاعات مالک و ملک</span></SectionTitle>
           <dl className="receipt-details-grid">
-            <Detail label="نام مالک" value={receipt.NameOwner} />
+            <Detail label="نام مالک" value={receipt.NameOwner === "بدون نام" ? "" : receipt.NameOwner} />
             <Detail label="شناسه مالک" value={receipt.IdMalek} numeric />
             <Detail label="شماره پرونده" value={receipt.ParvandeNo} numeric />
             <Detail label="کد نوسازی" value={receipt.CodeNosazi} numeric />
@@ -155,9 +158,65 @@ function ReceiptContent({ receipt }: { receipt: ReceiptDetails }) {
   );
 }
 
+function ReceiptLookup({ params }: { params: URLSearchParams }) {
+  const [initialResult] = useState(() => readReceiptParams(params));
+  const [result, setResult] = useState(initialResult);
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<"loading" | "ready" | "error">(() =>
+    initialResult.success && canRefreshReceipt(initialResult.receipt) ? "loading" : "ready");
+  const [refreshError, setRefreshError] = useState("");
+
+  useEffect(() => {
+    if (!initialResult.success || !canRefreshReceipt(initialResult.receipt)) return;
+    const controller = new AbortController();
+    let active = true;
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    setState("loading");
+    setRefreshError("");
+    fetchReceiptDetails(initialResult.receipt, controller.signal).then((receipt) => {
+      if (!active) return;
+      setResult({ ...initialResult, receipt });
+      setState("ready");
+    }).catch(() => {
+      if (!active) return;
+      setRefreshError("به‌روزرسانی اطلاعات قبض انجام نشد؛ اطلاعات موجود در لینک نمایش داده می‌شود.");
+      setState("error");
+    }).finally(() => window.clearTimeout(timeout));
+    return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
+  }, [initialResult, attempt]);
+
+  if (!result.success) return (
+    <section className="receipt-paper receipt-error" aria-labelledby="receipt-error-title">
+      <div className="receipt-error-icon"><XCircle size={38} aria-hidden="true" /></div>
+      <p className="receipt-eyebrow">مشاهده قبض عوارض شهری</p>
+      <h1 id="receipt-error-title">دریافت اطلاعات قبض ناموفق بود</h1>
+      <p role="alert" className="receipt-error-message">{result.message}</p>
+      <p className="receipt-error-help">برای بررسی و دریافت دوباره قبض، به بخش عوارض نوسازی مراجعه کنید.</p>
+      <div className="receipt-error-actions">
+        <Link to="/modern-toll" className="receipt-pay-button"><FileText size={18} aria-hidden="true" />استعلام دوباره قبض</Link>
+        <Link to="/" className="receipt-back-link"><ArrowRight size={16} aria-hidden="true" />بازگشت به صفحه اصلی</Link>
+      </div>
+    </section>
+  );
+
+  return (
+    <>
+      <div className="receipt-intro" role="status"><span className="receipt-intro-line" /><span>
+        {state === "loading" ? <LoaderCircle size={14} className="animate-spin" aria-hidden="true" /> : <Check size={14} aria-hidden="true" />}
+        {state === "loading" ? "در حال دریافت آخرین اطلاعات قبض…" : "اطلاعات قبض دریافت شد"}
+      </span></div>
+      {result.message && <p role="status" className="receipt-query-message">{result.message}</p>}
+      {refreshError && <div className="receipt-query-message" role="status">
+        <p>{refreshError}</p>
+        <button type="button" className="receipt-back-link" onClick={() => { setState("loading"); setAttempt((value) => value + 1); }}>تلاش دوباره</button>
+      </div>}
+      <ReceiptContent key={`${attempt}:${state}`} receipt={result.receipt} isRefreshing={state === "loading"} />
+    </>
+  );
+}
+
 export function ReceiptPage({ isDark, toggleTheme }: ReceiptPageProps) {
   const [searchParams] = useSearchParams();
-  const result = readReceiptParams(searchParams);
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -175,25 +234,7 @@ export function ReceiptPage({ isDark, toggleTheme }: ReceiptPageProps) {
             <ArrowLeft size={13} aria-hidden="true" /><span aria-current="page">مشاهده قبض</span>
           </nav>
 
-          {result.success ? (
-            <>
-              <div className="receipt-intro"><span className="receipt-intro-line" /><span><Check size={14} aria-hidden="true" />اطلاعات قبض دریافت شد</span></div>
-              {result.message && <p role="status" className="receipt-query-message">{result.message}</p>}
-              <ReceiptContent key={searchParams.toString()} receipt={result.receipt} />
-            </>
-          ) : (
-            <section className="receipt-paper receipt-error" aria-labelledby="receipt-error-title">
-              <div className="receipt-error-icon"><XCircle size={38} aria-hidden="true" /></div>
-              <p className="receipt-eyebrow">مشاهده قبض عوارض شهری</p>
-              <h1 id="receipt-error-title">دریافت اطلاعات قبض ناموفق بود</h1>
-              <p role="alert" className="receipt-error-message">{result.message}</p>
-              <p className="receipt-error-help">برای بررسی و دریافت دوباره قبض، به بخش عوارض نوسازی مراجعه کنید.</p>
-              <div className="receipt-error-actions">
-                <Link to="/modern-toll" className="receipt-pay-button"><FileText size={18} aria-hidden="true" />استعلام دوباره قبض</Link>
-                <Link to="/" className="receipt-back-link"><ArrowRight size={16} aria-hidden="true" />بازگشت به صفحه اصلی</Link>
-              </div>
-            </section>
-          )}
+          <ReceiptLookup key={searchParams.toString()} params={searchParams} />
 
           <div className="receipt-page-footer"><Building2 size={17} aria-hidden="true" /><span>شهروندیار · خدمات شهری، ساده و در دسترس</span></div>
         </div>

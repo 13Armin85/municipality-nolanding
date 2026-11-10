@@ -18,6 +18,43 @@ export type ReceiptResult =
   | { success: false; message: string }
   | { success: true; receipt: ReceiptDetails; message: string };
 
+const receiptAliases: Record<keyof ReceiptDetails, string[]> = {
+  ParvandeNo: ["FileNo"],
+  IdMalek: ["OwnerId"],
+  Year: ["Sal"],
+  ShenaseGhabz: ["BillId", "GhabzId"],
+  ShenasePardakht: ["PaymentId", "PardakhtId"],
+  CodeNosazi: ["CodeN", "FullCode"],
+  NameOwner: ["Nam_malek", "OwnerName", "MalekName"],
+  Address: ["Nam_address"],
+  Description: ["Desc"],
+  DateSodor: ["Date", "Tarikh"],
+  Price: ["Mablagh", "Amount"],
+  DelayedPrice: ["Moavaghe"],
+  PaymentStatus: ["IsPaid", "Paid"],
+};
+
+const normalizeField = (key: string) => key.toLowerCase().replace(/_/g, "");
+
+/** Normalize the same bill fields from query strings and ReceiveBill JSON. */
+export function receiptRecordParams(record: object): URLSearchParams {
+  const entries = new Map(Object.entries(record).map(([key, value]) => [normalizeField(key), value]));
+  const params = new URLSearchParams();
+  for (const [field, aliases] of Object.entries(receiptAliases)) {
+    for (const name of [field, ...aliases]) {
+      const value = entries.get(normalizeField(name));
+      if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") continue;
+      // Numeric identifiers outside the safe integer range cannot be recovered faithfully.
+      if (typeof value === "number" && !Number.isSafeInteger(value) && field !== "Price" && field !== "DelayedPrice") continue;
+      const text = String(value).trim();
+      if (!text) continue;
+      params.set(field, text);
+      break;
+    }
+  }
+  return params;
+}
+
 const englishDigits = (value: string) =>
   value
     .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
@@ -25,7 +62,9 @@ const englishDigits = (value: string) =>
 
 const parseAmount = (value: string): number | null => {
   const normalized = englishDigits(value).replace(/[,٬]/g, "");
-  if (!/^\d+$/.test(normalized)) return null;
+  // Inquiry serializes whole-rial amounts as .NET decimals (e.g. 9700802.0000).
+  // Accept a zero fractional part without rounding or truncating fractional rials.
+  if (!/^\d+(?:\.0+)?$/.test(normalized)) return null;
   const amount = Number(normalized);
   return Number.isSafeInteger(amount) ? amount : null;
 };
@@ -34,6 +73,7 @@ const parseAmount = (value: string): number | null => {
 export function readReceiptParams(params: URLSearchParams): ReceiptResult {
   const values = new Map<string, string>();
   params.forEach((value, key) => values.set(key.toLowerCase(), value.trim()));
+  receiptRecordParams(Object.fromEntries(params)).forEach((value, key) => values.set(key.toLowerCase(), value));
   const read = (key: string) => values.get(key.toLowerCase()) ?? "";
   const success = read("Success").toLowerCase();
   const message = read("Message");
