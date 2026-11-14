@@ -66,6 +66,7 @@
 .certificate-dialog-heading h2 { font-size: 17px; }
 .certificate-dialog-heading p { margin-top: 7px; font-size: 11px; overflow-wrap: anywhere; }
 .certificate-preview-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.certificate-preview-actions > .certificate-button { flex: 1 1 auto; }
 .certificate-pdf { width: 100%; min-height: 0; flex: 1; border: 1px solid var(--border); border-radius: 12px; background: var(--muted); }
 .certificate-dialog .certificate-state { flex: 1; min-height: 0; margin: 0; }
 .certificate-preview-hint { color: var(--muted-foreground); font-size: 11px; line-height: 1.9; }

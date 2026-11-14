@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft, ArrowRight, CalendarDays, Download, ExternalLink, FileCheck2,
-  FileText, FolderOpen, Hash, Home, LoaderCircle, RefreshCw, Search, X,
+  FileText, FolderOpen, Hash, Home, LoaderCircle, Printer, RefreshCw, Search, X,
 } from "lucide-react";
 import { Header } from "../components/Header";
 import {
@@ -21,6 +21,9 @@ const normalizeSearch = (value: string) => value
 function CertificatePreview({ certificate, onClose }: { certificate: Certificate; onClose: () => void }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [isPdfReady, setIsPdfReady] = useState(false);
+  const [printError, setPrintError] = useState("");
+  const pdfFrame = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     let objectUrl = "";
@@ -32,6 +35,17 @@ function CertificatePreview({ certificate, onClose }: { certificate: Certificate
     }
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [certificate]);
+
+  const printCertificate = () => {
+    if (!isPdfReady || !pdfFrame.current?.contentWindow) return;
+    setPrintError("");
+    try {
+      pdfFrame.current.contentWindow.focus();
+      pdfFrame.current.contentWindow.print();
+    } catch {
+      setPrintError("مرورگر شما چاپ مستقیم را پشتیبانی نمی‌کند. فایل را با دکمه «باز کردن فایل» باز کنید و از گزینه چاپ استفاده کنید.");
+    }
+  };
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
@@ -45,6 +59,9 @@ function CertificatePreview({ certificate, onClose }: { certificate: Certificate
             </DialogDescription>
           </div>
           {url && <div className="certificate-preview-actions">
+            <button type="button" onClick={printCertificate} disabled={!isPdfReady} className="certificate-button">
+              <Printer size={16} aria-hidden="true" />چاپ گواهی
+            </button>
             <a href={url} download={certificateFileName(certificate)} className="certificate-button certificate-button--primary">
               <Download size={16} aria-hidden="true" />دانلود PDF
             </a>
@@ -54,9 +71,10 @@ function CertificatePreview({ certificate, onClose }: { certificate: Certificate
           </div>}
         </DialogHeader>
         {error ? <div role="alert" className="certificate-state certificate-state--error"><FileText size={32} /><p>{error}</p></div>
-          : url ? <iframe src={url} title={`${certificate.type}، پرونده ${certificate.fileId}`} className="certificate-pdf" />
+          : url ? <iframe ref={pdfFrame} src={url} onLoad={() => setIsPdfReady(true)} title={`${certificate.type}، پرونده ${certificate.fileId}`} className="certificate-pdf" />
           : <div role="status" className="certificate-state"><LoaderCircle className="animate-spin" /><p>در حال آماده‌سازی گواهی…</p></div>}
-        {url && <p className="certificate-preview-hint">اگر پیش‌نمایش در مرورگر شما نمایش داده نمی‌شود، فایل را دانلود یا در صفحه جدید باز کنید.</p>}
+        {printError && <p role="alert" className="certificate-card-error">{printError}</p>}
+        {url && <p className="certificate-preview-hint">گواهی را در همین پنجره ببینید، با «چاپ گواهی» چاپ کنید یا با «دانلود PDF» دریافت کنید. برای ذخیره از پنجره چاپ، گزینه «Save as PDF» را انتخاب کنید. اگر پیش‌نمایش نمایش داده نمی‌شود، «باز کردن فایل» را بزنید.</p>}
       </DialogContent>
     </Dialog>
   );
