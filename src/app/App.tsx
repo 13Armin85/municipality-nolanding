@@ -169,6 +169,14 @@ export default function App() {
             }
           />
           <Route
+            path="/certificates"
+            element={
+              <ProtectedRoute isDark={isDark} toggleTheme={toggleTheme}>
+                <CertificatesPage isDark={isDark} toggleTheme={toggleTheme} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/property-inquiry"
             element={
               <ProtectedRoute isDark={isDark} toggleTheme={toggleTheme}>
@@ -288,6 +296,9 @@ const GuildFeesPage = lazy(() =>
   import("./pages/GuildFeesPage").then((module) => ({
     default: module.GuildFeesPage,
   })),
+);
+const CertificatesPage = lazy(() =>
+  import("./pages/CertificatesPage").then((module) => ({ default: module.CertificatesPage })),
 );
 const PropertyInquiryPage = lazy(() =>
   import("./pages/PropertyInquiryPage").then((module) => ({

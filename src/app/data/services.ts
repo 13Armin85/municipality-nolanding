@@ -1,4 +1,5 @@
 import {
+  FileCheck2,
   FilePlus2,
   Landmark,
   LayoutDashboard,
@@ -65,5 +66,13 @@ export const serviceItems: ServiceItem[] = [
     description: "بررسی وضعیت عقب‌نشینی املاک",
     color: "from-secondary to-primary/90",
     href: "/property-inquiry",
+  },
+  {
+    id: "certificates",
+    icon: FileCheck2,
+    title: "گواهی‌ها",
+    description: "مشاهده و دریافت پروانه‌ها، پایانکار و پاسخ استعلام‌ها",
+    color: "from-primary to-secondary",
+    href: "/certificates",
   },
 ];

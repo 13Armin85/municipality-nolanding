@@ -97,6 +97,26 @@ export default defineConfig(({ mode }) => {
   return {
     base: appBase,
 
+    // Share these defaults with the browser bundle as well as the dev proxies.
+    // Updating the addresses above must affect both development and production.
+    define: {
+      "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
+        readEnvUrl(env, ["VITE_API_BASE_URL", "VITE_API_URL"], DEFAULT_API_BASE_URL),
+      ),
+      "import.meta.env.VITE_DOTNET10_API_BASE_URL": JSON.stringify(
+        readEnvUrl(env, ["VITE_DOTNET10_API_BASE_URL", "VITE_DOTNET10_API_URL"], DEFAULT_DOTNET10_API_BASE_URL),
+      ),
+      "import.meta.env.VITE_PAYMENT_API_BASE_URL": JSON.stringify(
+        readEnvUrl(env, ["VITE_PAYMENT_API_BASE_URL"], DEFAULT_PAYMENT_API_BASE_URL),
+      ),
+      "import.meta.env.VITE_RENOVATION_BILL_API_BASE_URL": JSON.stringify(
+        readEnvUrl(env, ["VITE_RENOVATION_BILL_API_BASE_URL"], DEFAULT_RENOVATION_BILL_API_BASE_URL),
+      ),
+      "import.meta.env.VITE_SMS_API_BASE_URL": JSON.stringify(
+        readEnvUrl(env, ["VITE_SMS_API_BASE_URL"], DEFAULT_SMS_API_BASE_URL),
+      ),
+    },
+
     plugins: [
       figmaAssetResolver(),
       react(),
