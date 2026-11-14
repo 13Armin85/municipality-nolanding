@@ -146,11 +146,6 @@ export const navItems = [
     icon: Settings,
     children: [
       {
-        id: "settings",
-        label: "تنظیمات عمومی",
-        icon: Settings,
-      },
-      {
         id: "site-content",
         label: "محتوای سایت",
         icon: Layout,

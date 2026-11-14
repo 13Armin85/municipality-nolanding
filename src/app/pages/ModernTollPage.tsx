@@ -15,7 +15,7 @@ import {
   FileText,
   Users,
   Receipt,
-  History,
+  ChevronDown,
   LayoutGrid,
   MapPinHouse,
   CreditCard,
@@ -85,13 +85,6 @@ interface LabelValue {
   value: string;
 }
 
-interface HistoryItem {
-  id: string;
-  date: string;
-  amount: string;
-  status: string;
-}
-
 interface PaymentReportItem {
   id: string;
   billId: string;
@@ -145,7 +138,7 @@ const billRows = (bill: RenovationBill): LabelValue[] => [
           value:
             bill.Discount === null
               ? emptyDisplay
-              : `${bill.Discount.toLocaleString("fa-IR")} ریال`,
+              : `${bill.Discount.toLocaleString("fa-IR")} درصد`,
         },
       ]
     : []),
@@ -872,6 +865,21 @@ const mapOwner = (owner: any, index: number): OwnerItem => {
   };
 };
 
+function BillDetails({ rows }: { rows: LabelValue[] }) {
+  return (
+    <dl className="grid min-w-0 grid-cols-1 gap-x-5 sm:grid-cols-2">
+      {rows.map((field, index) => (
+        <div key={field.label + index} className="flex min-w-0 items-start justify-between gap-3 border-b border-border/30 py-2.5 text-xs">
+          <dt className="shrink-0 text-muted-foreground">{field.label}:</dt>
+          <dd className="min-w-0 text-left font-medium leading-6 text-foreground/80 [overflow-wrap:anywhere]">
+            <bdi>{field.value}</bdi>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [propertyItems, setPropertyItems] = useState<LocalPropertyItem[]>([]);
   const [selectedProperty, setSelectedProperty] =
@@ -879,7 +887,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [owners, setOwners] = useState<OwnerItem[]>([]);
   const [feesRight, setFeesRight] = useState<LabelValue[]>([]);
   const [feesLeft, setFeesLeft] = useState<LabelValue[]>([]);
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [paymentReports, setPaymentReports] = useState<PaymentReportItem[]>([]);
   const [isPaymentReportsLoading, setIsPaymentReportsLoading] = useState(false);
   const [paymentReportsError, setPaymentReportsError] = useState("");
@@ -1058,14 +1066,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
         tollBill ? extractPaymentIdentifiers(tollBill) : null,
       );
 
-      setHistoryItems(
-        tollBills.map((item, index) => ({
-          id: String(item.ParvandeNo ?? index + 1),
-          date: item.DateSodor ?? "—",
-          amount: `${Number(item.Price || 0).toLocaleString("fa-IR")} ریال`,
-          status: item.PaymentStatus ? "پرداخت شده" : "پرداخت نشده",
-        })),
-      );
       setOwners(rawOwners.map(mapOwner));
     } catch (loadError) {
       if (requestId !== renovationRequestIdRef.current) return;
@@ -1079,7 +1079,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       setRenovationServices([]);
       setFeesRight([]);
       setFeesLeft([]);
-      setHistoryItems([]);
+
       setPaymentIdentifiers(null);
     } finally {
       if (requestId === renovationRequestIdRef.current) {
@@ -1099,7 +1099,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setFeesLeft([]);
     setRenovationBills([]);
     setRenovationServices([]);
-    setHistoryItems([]);
+
     setPaymentIdentifiers(null);
     setPaymentError("");
     setIsPaymentLoading(false);
@@ -1275,7 +1275,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setFeesLeft([]);
     setRenovationBills([]);
     setRenovationServices([]);
-    setHistoryItems([]);
+
     setPaymentIdentifiers(null);
     setPaymentError("");
 
@@ -1614,14 +1614,15 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             </div>
           </motion.article>
 
+          <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-2">
           {/* عوارض نوسازی جاری */}
           <motion.article
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="soft-card mesh-panel"
+            className="soft-card mesh-panel min-w-0"
           >
-            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
               <div className="flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-primary" />
                 <h2 className="text-sm font-bold text-foreground">
@@ -1666,47 +1667,10 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-0 md:grid-cols-2">
-                    <div className="space-y-0">
-                      {(feesRight.length
-                        ? feesRight
-                        : Array(9).fill({ label: "—", value: "—" })
-                      ).map((field, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between border-b border-border/30 py-2.5 text-xs md:text-sm"
-                        >
-                          <span className="text-muted-foreground">
-                            {field.label} :
-                          </span>
-                          <span className="font-medium text-foreground/80">
-                            {field.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-0">
-                      {(feesLeft.length
-                        ? feesLeft
-                        : Array(9).fill({ label: "—", value: "—" })
-                      ).map((field, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between border-b border-border/30 py-2.5 text-xs md:text-sm"
-                        >
-                          <span className="text-muted-foreground">
-                            {field.label} :
-                          </span>
-                          <span className="font-medium text-foreground/80">
-                            {field.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <BillDetails rows={currentFeeRows} />
 
                   <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:p-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-4">
                       <div className="flex min-w-0 items-start gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                           <Wallet className="h-5 w-5" />
@@ -1719,7 +1683,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                             {paymentHint}
                           </p>
                           {paymentIdentifiers && (
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-foreground/70 sm:text-[11px]">
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 [overflow-wrap:anywhere] text-[10px] text-foreground/70 sm:text-[11px]">
                               <span>
                                 شناسه قبض:{" "}
                                 <bdi dir="ltr">{paymentIdentifiers.billId}</bdi>
@@ -1740,7 +1704,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                         onClick={() => handlePayment(renovationBills[0], 0)}
                         disabled={!canStartPayment}
                         aria-busy={isPaymentLoading}
-                        className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
+                        className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none "
                       >
                         {isCurrentPaymentLoading ? (
                           <LoaderCircle className="h-5 w-5 animate-spin" />
@@ -1769,6 +1733,120 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             </div>
           </motion.article>
 
+          {/* خدمات نوسازی */}
+          <motion.article
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="soft-card mesh-panel min-w-0 overflow-hidden"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">
+                  خدمات نوسازی
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <HelpButton
+                  title="خدمات نوسازی"
+                  desc="خدمات و مبالغ خدمات نوسازی مربوط به پرونده انتخاب‌شده در این جدول نمایش داده می‌شود."
+                />
+                {hasRenovationServices && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportPairsToPdf(renovationServices, "خدمات نوسازی")
+                    }
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-sky-500/35 bg-sky-500/10 px-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-500/15 dark:text-sky-300"
+                  >
+                    <FileText className="h-4 w-4" />
+                    خروجی پی دی اف
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="p-4">
+              {isRenovationLoading ? (
+                <div role="status" className="flex min-h-56 items-center justify-center gap-2 text-xs text-primary">
+                  <LoaderCircle className="h-5 w-5 animate-spin" />
+                  در حال دریافت خدمات نوسازی...
+                </div>
+              ) : hasRenovationServices ? (
+                <BillDetails rows={renovationServices} />
+              ) : (
+                <div className="flex min-h-40 items-center justify-center rounded-2xl border border-border/70 bg-muted/20 px-4 text-center text-xs text-muted-foreground">
+                  {error || "رکورد خدمات نوسازی برای این کد دریافت نشد."}
+                </div>
+              )}
+              {hasRenovationServices && renovationServiceBill && (
+                <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:p-5">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                        <Wallet className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-foreground">
+                          پرداخت آنلاین خدمات
+                        </h3>
+                        <p className="mt-1 text-[11px] leading-5 text-muted-foreground sm:text-xs">
+                          {servicePaymentHint}
+                        </p>
+                        {servicePaymentIdentifiers && (
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 [overflow-wrap:anywhere] text-[10px] text-foreground/70 sm:text-[11px]">
+                            <span>
+                              شناسه قبض:{" "}
+                              <bdi dir="ltr">
+                                {servicePaymentIdentifiers.billId}
+                              </bdi>
+                            </span>
+                            <span>
+                              شناسه پرداخت:{" "}
+                              <bdi dir="ltr">
+                                {servicePaymentIdentifiers.paymentId}
+                              </bdi>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handlePayment(renovationServiceBill, 1)}
+                      disabled={!canStartServicePayment}
+                      aria-busy={isServicePaymentLoading}
+                      className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none "
+                    >
+                      {isServicePaymentLoading ? (
+                        <LoaderCircle className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-5 w-5" />
+                      )}
+                      {renovationServiceBill.PaymentStatus
+                        ? "پرداخت شده"
+                        : isServicePaymentLoading
+                          ? "در حال اتصال به درگاه..."
+                          : "پرداخت خدمات"}
+                    </button>
+                  </div>
+
+                  {servicePaymentError && (
+                    <div
+                      role="alert"
+                      className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs leading-6 text-destructive"
+                    >
+                      {servicePaymentError}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.article>
+
+          </div>
+
           {/* سوابق پرداخت‌ها */}
           <motion.article
             initial={{ opacity: 0, y: 12 }}
@@ -1776,13 +1854,16 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             viewport={{ once: true }}
             className="soft-card mesh-panel"
           >
-            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+              <h2 className="min-w-0 flex-1">
+                <button type="button" onClick={() => setIsPaymentHistoryOpen((open) => !open)}
+                  aria-expanded={isPaymentHistoryOpen} aria-controls="renovation-payment-history"
+                  className="flex w-full items-center gap-2 py-2 text-right text-sm font-bold text-foreground">
+                  <FileText className="h-4 w-4 shrink-0 text-primary" />
                   سوابق پرداخت‌ها
-                </h2>
-              </div>
+                  <ChevronDown className={"mr-auto h-4 w-4 shrink-0 transition-transform " + (isPaymentHistoryOpen ? "rotate-180" : "")} />
+                </button>
+              </h2>
               <div className="flex items-center gap-2">
                 <HelpButton
                   title="سوابق پرداخت‌ها"
@@ -1802,7 +1883,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               </div>
             </div>
 
-            <div className="responsive-table-shell p-3 sm:p-4">
+            <div id="renovation-payment-history" hidden={!isPaymentHistoryOpen} className="responsive-table-shell p-3 sm:p-4">
               {isPaymentReportsLoading ? (
                 <div className="p-6 text-center text-muted-foreground">
                   <span className="inline-flex items-center gap-2">
@@ -1878,200 +1959,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          </motion.article>
-
-          {/* خدمات نوسازی */}
-          <motion.article
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="soft-card mesh-panel overflow-hidden"
-          >
-            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">
-                  خدمات نوسازی
-                </h2>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <HelpButton
-                  title="خدمات نوسازی"
-                  desc="خدمات و مبالغ خدمات نوسازی مربوط به پرونده انتخاب‌شده در این جدول نمایش داده می‌شود."
-                />
-                {hasRenovationServices && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      exportPairsToPdf(renovationServices, "خدمات نوسازی")
-                    }
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-sky-500/35 bg-sky-500/10 px-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-500/15 dark:text-sky-300"
-                  >
-                    <FileText className="h-4 w-4" />
-                    خروجی پی دی اف
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="responsive-table-shell p-3 sm:p-4">
-              <table className="w-full min-w-[480px] border-separate border-spacing-0 text-xs md:text-sm">
-                <thead>
-                  <tr className="bg-muted/40 text-muted-foreground">
-                    <th className="rounded-r-xl p-3 text-right font-medium">
-                      عنوان خدمت
-                    </th>
-                    <th className="rounded-l-xl p-3 text-right font-medium">
-                      مقدار / مبلغ
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isRenovationLoading ? (
-                    <tr>
-                      <td
-                        colSpan={2}
-                        className="p-5 text-center text-muted-foreground"
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <LoaderCircle className="h-4 w-4 animate-spin" />
-                          در حال دریافت خدمات نوسازی...
-                        </span>
-                      </td>
-                    </tr>
-                  ) : renovationServices.length > 0 ? (
-                    renovationServices.map((service, index) => (
-                      <tr
-                        key={`${service.label}-${index}`}
-                        className="border-b border-border/40 transition-colors hover:bg-muted/20"
-                      >
-                        <td className="p-3 text-muted-foreground text-right">
-                          {service.label} :
-                        </td>
-                        <td className="p-3 font-medium text-foreground/80">
-                          {service.value}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={2}
-                        className="p-5 text-center text-muted-foreground"
-                      >
-                        رکورد خدمات نوسازی برای این کد دریافت نشد.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              {hasRenovationServices && renovationServiceBill && (
-                <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                        <Wallet className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-foreground">
-                          پرداخت آنلاین خدمات
-                        </h3>
-                        <p className="mt-1 text-[11px] leading-5 text-muted-foreground sm:text-xs">
-                          {servicePaymentHint}
-                        </p>
-                        {servicePaymentIdentifiers && (
-                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-foreground/70 sm:text-[11px]">
-                            <span>
-                              شناسه قبض:{" "}
-                              <bdi dir="ltr">
-                                {servicePaymentIdentifiers.billId}
-                              </bdi>
-                            </span>
-                            <span>
-                              شناسه پرداخت:{" "}
-                              <bdi dir="ltr">
-                                {servicePaymentIdentifiers.paymentId}
-                              </bdi>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handlePayment(renovationServiceBill, 1)}
-                      disabled={!canStartServicePayment}
-                      aria-busy={isServicePaymentLoading}
-                      className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
-                    >
-                      {isServicePaymentLoading ? (
-                        <LoaderCircle className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <CreditCard className="h-5 w-5" />
-                      )}
-                      {renovationServiceBill.PaymentStatus
-                        ? "پرداخت شده"
-                        : isServicePaymentLoading
-                          ? "در حال اتصال به درگاه..."
-                          : "پرداخت خدمات"}
-                    </button>
-                  </div>
-
-                  {servicePaymentError && (
-                    <div
-                      role="alert"
-                      className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs leading-6 text-destructive"
-                    >
-                      {servicePaymentError}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.article>
-
-          {/* سوابق نوسازی */}
-          <motion.article
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="soft-card mesh-panel"
-          >
-            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <History className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">
-                  سوابق نوسازی جاری
-                </h2>
-              </div>
-              <HelpButton
-                title="سوابق نوسازی"
-                desc="در این قسمت سوابق پرداخت یا رکوردهای قبلی مرتبط با پرونده انتخاب‌شده نمایش داده می‌شود. اگر موردی وجود نداشته باشد پیام خالی بودن داده نشان داده می‌شود."
-              />
-            </div>
-            <div className="p-4">
-              {historyItems.length > 0 ? (
-                <div className="space-y-2">
-                  {historyItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between rounded-lg border p-3 text-xs"
-                    >
-                      <span>تاریخ: {item.date}</span>
-                      <span>مبلغ: {item.amount}</span>
-                      <span className="text-emerald-500">{item.status}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-center text-xs text-destructive">
-                  موردی برای نمایش وجود ندارد.
-                </div>
-              )}
-              {error && (
-                <div className="mt-3 text-xs text-destructive">{error}</div>
               )}
             </div>
           </motion.article>

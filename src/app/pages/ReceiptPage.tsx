@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, CreditCard,
-  FileText, Home, Info, LoaderCircle, MapPin, ShieldCheck, UserRound,
+  FileText, Home, Info, LoaderCircle, Moon, Sun, ShieldCheck, UserRound,
   XCircle,
 } from "lucide-react";
-import { Header } from "../components/Header";
 import {
   getReceiptPaymentStatus, getReceiptTotal, readReceiptParams,
   type ReceiptDetails,
@@ -21,16 +20,36 @@ interface ReceiptPageProps {
   toggleTheme: () => void;
 }
 
-const money = (value: number | null) => value === null ? "—" : value.toLocaleString("fa-IR");
-const display = (value: string) => value || "ثبت نشده";
+const money = (value: number | null) => value === null ? "مبلغ دریافت نشده" : value.toLocaleString("fa-IR");
+const display = (value: string) => value.trim() || "ثبت نشده";
 
 function Detail({ label, value, numeric = false }: {
   label: string; value: string; numeric?: boolean;
 }) {
+  const id = useId();
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const field = fieldRef.current;
+    if (!field) return;
+    const resize = () => {
+      field.style.height = "auto";
+      field.style.height = `${field.scrollHeight + 2}px`;
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(field);
+    document.fonts.ready.then(resize);
+    return () => observer.disconnect();
+  }, [value]);
+
   return (
     <div className="receipt-detail">
-      <dt>{label}</dt>
-      <dd><bdi dir={numeric ? "ltr" : "auto"}>{display(value)}</bdi></dd>
+      <dt><label htmlFor={id}>{label}</label></dt>
+      <dd>
+        <textarea id={id} ref={fieldRef} className="receipt-field" rows={1}
+          readOnly value={display(value)} dir={numeric ? "ltr" : "auto"} />
+      </dd>
     </div>
   );
 }
@@ -98,24 +117,19 @@ function ReceiptContent({ receipt, isRefreshing }: { receipt: ReceiptDetails; is
         </span>
       </div>
 
-      <div className="receipt-meta-strip">
-        <span>سال عملکرد <bdi dir="ltr">{display(receipt.Year)}</bdi></span>
-        <span>تاریخ صدور <bdi dir="ltr">{display(receipt.DateSodor)}</bdi></span>
-      </div>
+      <dl className="receipt-meta-strip">
+        <Detail label="سال عملکرد" value={receipt.Year} numeric />
+        <Detail label="تاریخ صدور" value={receipt.DateSodor} numeric />
+      </dl>
 
       <div className="receipt-paper-body">
         <section aria-labelledby="receipt-owner-heading">
           <SectionTitle icon={<UserRound size={18} />}><span id="receipt-owner-heading">اطلاعات مالک و ملک</span></SectionTitle>
           <dl className="receipt-details-grid">
-            <Detail label="نام مالک" value={receipt.NameOwner === "بدون نام" ? "" : receipt.NameOwner} />
-            <Detail label="شناسه مالک" value={receipt.IdMalek} numeric />
-            <Detail label="شماره پرونده" value={receipt.ParvandeNo} numeric />
+            <Detail label="نام مالک" value={receipt.NameOwner} />
             <Detail label="کد نوسازی" value={receipt.CodeNosazi} numeric />
           </dl>
-          <div className="receipt-address">
-            <MapPin size={18} aria-hidden="true" />
-            <div><p>نشانی ملک</p><p>{display(receipt.Address)}</p></div>
-          </div>
+          <dl className="receipt-address"><Detail label="نشانی ملک" value={receipt.Address} /></dl>
           <dl className="receipt-description"><Detail label="شرح قبض" value={receipt.Description} /></dl>
         </section>
 
@@ -124,22 +138,23 @@ function ReceiptContent({ receipt, isRefreshing }: { receipt: ReceiptDetails; is
           <dl className="receipt-identifiers">
             <Detail label="شناسه قبض" value={receipt.ShenaseGhabz} numeric />
             <Detail label="شناسه پرداخت" value={receipt.ShenasePardakht} numeric />
+            <Detail label="وضعیت پرداخت" value={isPaid ? "پرداخت‌شده" : status === "unpaid" ? "در انتظار پرداخت" : "وضعیت نامشخص"} />
           </dl>
         </section>
 
         <section className="receipt-financials" aria-labelledby="receipt-financials-heading">
           <SectionTitle icon={<CreditCard size={18} />}><span id="receipt-financials-heading">جزئیات مبلغ</span></SectionTitle>
           <dl className="receipt-amount-rows">
-            <div><dt>مبلغ عوارض</dt><dd>{money(receipt.Price)} <small>ریال</small></dd></div>
-            <div><dt>دیرکرد</dt><dd>{money(receipt.DelayedPrice)} <small>ریال</small></dd></div>
+            <Detail label="مبلغ عوارض (ریال)" value={money(receipt.Price)} numeric={receipt.Price !== null} />
+            <Detail label="دیرکرد (ریال)" value={money(receipt.DelayedPrice)} numeric={receipt.DelayedPrice !== null} />
           </dl>
         </section>
       </div>
 
       <div className="receipt-payment-section">
         <div className="receipt-total">
-          <div><p>{isPaid ? "مبلغ کل قبض" : "مبلغ قابل پرداخت"}</p><span>مجموع عوارض و دیرکرد</span></div>
-          <p><strong>{money(total)}</strong> <span>ریال</span></p>
+          <dl><Detail label={isPaid ? "مبلغ کل قبض (ریال)" : "مبلغ قابل پرداخت (ریال)"} value={money(total)} numeric={total !== null} /></dl>
+          <span>مجموع عوارض و دیرکرد</span>
         </div>
         <button type="button" className="receipt-pay-button" onClick={handlePayment}
           disabled={Boolean(paymentIssue) || isPaying} aria-busy={isPaying} aria-describedby="receipt-payment-hint">
@@ -226,7 +241,12 @@ export function ReceiptPage({ isDark, toggleTheme }: ReceiptPageProps) {
 
   return (
     <>
-      <Header isDark={isDark} toggleTheme={toggleTheme} stayOnLogin />
+      <header className="receipt-public-header">
+        <Link to="/" className="receipt-public-brand"><Building2 size={22} aria-hidden="true" />شهروندیار</Link>
+        <button type="button" onClick={toggleTheme} className="header-action-btn" aria-label={isDark ? "فعال کردن حالت روشن" : "فعال کردن حالت تیره"}>
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </header>
       <main className="receipt-page">
         <div className="receipt-container">
           <nav className="receipt-breadcrumb" aria-label="مسیر صفحه">

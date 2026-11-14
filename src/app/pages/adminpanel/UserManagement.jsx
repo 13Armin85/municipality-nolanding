@@ -54,13 +54,13 @@ function UserCard({
       exit={{ opacity: 0 }}
       className="space-y-3 rounded-lg border border-border/60 bg-card p-4"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
             {(user.name || user.family || "ک")[0]}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">
+            <p className="break-words text-sm font-semibold text-foreground">
               {fullName(user)}
             </p>
             <p className="font-mono text-xs text-muted-foreground" dir="ltr">
@@ -68,7 +68,7 @@ function UserCard({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           <button
             type="button"
             aria-label="تغییر رمز عبور"
@@ -112,20 +112,28 @@ function UserCard({
           </button>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <dl className="grid min-w-0 grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+        {[
+          ["نام کاربری", user.userName],
+          ["کد ملی", user.nationalCode],
+        ].map(([label, value]) => (
+          <div key={label} className="flex min-w-0 flex-wrap justify-between gap-2 rounded-lg bg-muted/40 p-2">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="min-w-0 break-all font-mono" dir="ltr">{value || "-"}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="flex flex-wrap items-start gap-2">
         <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${roleStyle}`}>
           {user.roleName || "بدون نقش"}
         </span>
         <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${user.isActive ? statusStyles.active : statusStyles.inactive}`}>
           {user.isActive ? (
-            <CheckCircle2 className="h-3 w-3" />
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
           ) : (
-            <XCircle className="h-3 w-3" />
+            <XCircle className="h-3 w-3 shrink-0" />
           )}
           {user.isActive ? "فعال" : "غیرفعال"}
-        </span>
-        <span className="mr-auto font-mono text-xs text-muted-foreground" dir="ltr">
-          {user.nationalCode || "-"}
         </span>
       </div>
     </motion.div>
@@ -254,7 +262,7 @@ export function UserManagement() {
       </div>
 
       <div className="flex gap-2">
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={search}
@@ -291,9 +299,9 @@ export function UserManagement() {
         </div>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm md:block">
-            <div className="responsive-table-shell">
-              <table className="w-full text-sm">
+          <div className="hidden overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm xl:block">
+            <div className="responsive-table-shell" role="region" aria-label="فهرست کاربران" tabIndex={0}>
+              <table className="w-full min-w-[64rem] whitespace-nowrap text-sm">
                 <thead>
                   <tr className="border-b border-border/70 bg-muted/40">
                     {["نام کاربر", "نام کاربری", "کد ملی", "شماره تماس", "نقش", "وضعیت", "عملیات"].map((header) => (
@@ -336,7 +344,7 @@ export function UserManagement() {
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${user.isActive ? statusStyles.active : statusStyles.inactive}`}>
-                            {user.isActive ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                            {user.isActive ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <XCircle className="h-3 w-3 shrink-0" />}
                             {user.isActive ? "فعال" : "غیرفعال"}
                           </span>
                         </td>
@@ -364,7 +372,7 @@ export function UserManagement() {
             </div>
           </div>
 
-          <div className="space-y-3 md:hidden">
+          <div className="grid min-w-0 grid-cols-1 gap-3 xl:hidden">
             <AnimatePresence>
               {filteredUsers.map((user) => (
                 <UserCard

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   Calendar,
-  CheckCircle2,
+  Archive,
+  XCircle,
   Sparkles,
   TrendingUp,
   Users,
@@ -87,8 +88,12 @@ export function Dashboard() {
     return () => controller.abort();
   }, []);
 
-  const totalRequests =
-    requestCounts.active + requestCounts.completed + requestCounts.cancellation;
+  const statistics = [
+    { label: "تعداد کاربران ثبت‌شده در سامانه شهروندیار", value: citizenCount, icon: Users, color: "bg-primary/10 text-primary" },
+    { label: "درخواست‌های فعال", value: requestCounts.active, icon: TrendingUp, color: "bg-blue-500/10 text-blue-600" },
+    { label: "بایگانی‌شده‌ها", value: requestCounts.completed, icon: Archive, color: "bg-emerald-500/10 text-emerald-600" },
+    { label: "ابطال‌شده‌ها", value: requestCounts.cancellation, icon: XCircle, color: "bg-destructive/10 text-destructive" },
+  ];
 
   const today = new Date().toLocaleDateString("fa-IR", {
     weekday: "long",
@@ -127,69 +132,24 @@ export function Dashboard() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="grid gap-4 xl:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                  <Users className="h-5 w-5" />
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {statistics.map(({ label, value, icon: Icon, color }, index) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+                className="flex min-w-0 flex-col rounded-2xl border border-border/70 bg-card p-4 shadow-sm"
+              >
+                <div className={"mb-3 w-fit rounded-xl p-2.5 " + color}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  شهروندان ثبت‌شده
-                </span>
-              </div>
-              <p className="mt-6 text-4xl font-bold text-foreground">
-                {citizenCount.toLocaleString()}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                تعداد کاربران ثبت‌شده در سامانه شهروندیار
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 }}
-              className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="rounded-2xl bg-blue-500/10 p-3 text-blue-600">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  درخواست‌ها
-                </span>
-              </div>
-              <p className="mt-6 text-4xl font-bold text-foreground">
-                {totalRequests.toLocaleString()}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                وضعیت درخواست‌های ثبت‌شده در سامانه
-              </p>
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-2xl border border-border/70 bg-muted p-4">
-                  <div className="flex items-center justify-between text-sm font-semibold text-foreground">
-                    <span>فعال</span>
-                    <span>{requestCounts.active.toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-muted p-4">
-                  <div className="flex items-center justify-between text-sm font-semibold text-foreground">
-                    <span>بایگانی‌شده</span>
-                    <span>{requestCounts.completed.toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-muted p-4">
-                  <div className="flex items-center justify-between text-sm font-semibold text-foreground">
-                    <span>ابطال‌شده</span>
-                    <span>{requestCounts.cancellation.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+                <p className="text-2xl font-bold tabular-nums text-foreground sm:text-3xl">
+                  {Number(value).toLocaleString("fa-IR")}
+                </p>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">{label}</p>
+              </motion.div>
+            ))}
           </div>
 
           <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm">

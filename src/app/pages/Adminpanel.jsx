@@ -25,7 +25,7 @@ import {
   AdminShahkarLogsPage,
   AdminSmsLogsPage,
 } from "./adminpanel/AdminIntegrationLogsPage";
-import { SettingsPage, SiteContentPage } from "./adminpanel/AdminSettingsPage";
+import { SiteContentPage } from "./adminpanel/AdminSettingsPage";
 import { AdminSlidersPage } from "./adminpanel/AdminSlidersPage";
 import { UserManagement } from "./adminpanel/UserManagement";
 import { navItems } from "./adminpanel/adminData";
@@ -72,7 +72,6 @@ export default function AdminPanel({ isDark, toggleTheme }) {
     "shahkar-logs": <AdminShahkarLogsPage />,
     "sms-logs": <AdminSmsLogsPage />,
     users: <UserManagement />,
-    settings: <SettingsPage />,
     "site-content": <SiteContentPage />,
     sliders: <AdminSlidersPage />,
     "map-settings": <AdminMapSettingsPage />,
@@ -167,7 +166,7 @@ export default function AdminPanel({ isDark, toggleTheme }) {
 
       <motion.aside
         animate={{ width: sidebarOpen ? 250 : 80 }}
-        className={`fixed md:sticky top-0 right-0 z-50 h-screen flex flex-col border-l bg-card transition-all ${mobileSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}
+        className={`fixed md:sticky top-0 right-0 z-50 h-screen shrink-0 flex flex-col border-l bg-card transition-all ${mobileSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}
         style={{ borderColor: "var(--border)" }}
       >
         <div

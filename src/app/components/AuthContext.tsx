@@ -37,7 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearLocalStorageExceptTheme();
     setIsAuthenticated(false);
     setIsLoginModalOpen(false);
-    if (location.pathname !== "/") {
+    const isPublicReceipt = location.pathname.replace(/\/+$/, "").toLowerCase() === "/receipt";
+    if (location.pathname !== "/" && !isPublicReceipt) {
       navigate("/", { replace: true });
     }
   };
