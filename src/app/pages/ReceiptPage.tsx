@@ -142,19 +142,11 @@ function ReceiptContent({ receipt, isRefreshing }: { receipt: ReceiptDetails; is
           </dl>
         </section>
 
-        <section className="receipt-financials" aria-labelledby="receipt-financials-heading">
-          <SectionTitle icon={<CreditCard size={18} />}><span id="receipt-financials-heading">جزئیات مبلغ</span></SectionTitle>
-          <dl className="receipt-amount-rows">
-            <Detail label="مبلغ عوارض (ریال)" value={money(receipt.Price)} numeric={receipt.Price !== null} />
-            <Detail label="دیرکرد (ریال)" value={money(receipt.DelayedPrice)} numeric={receipt.DelayedPrice !== null} />
-          </dl>
-        </section>
       </div>
 
       <div className="receipt-payment-section">
         <div className="receipt-total">
           <dl><Detail label={isPaid ? "مبلغ کل قبض (ریال)" : "مبلغ قابل پرداخت (ریال)"} value={money(total)} numeric={total !== null} /></dl>
-          <span>مجموع عوارض و دیرکرد</span>
         </div>
         <button type="button" className="receipt-pay-button" onClick={handlePayment}
           disabled={Boolean(paymentIssue) || isPaying} aria-busy={isPaying} aria-describedby="receipt-payment-hint">
