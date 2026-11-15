@@ -1,0 +1,36 @@
+.admin-income-card { min-width: 0; padding: 22px; border: 1px solid var(--border); border-radius: 24px; background: var(--card); box-shadow: 0 2px 8px #00000004; }
+.admin-income-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+.admin-income-heading-copy { display: flex; align-items: center; gap: 12px; }
+.admin-income-icon { display: inline-flex; flex-shrink: 0; padding: 11px; border-radius: 13px; color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.admin-income-heading h3 { font-size: 15px; font-weight: 800; }
+.admin-income-heading-copy p { margin-top: 5px; color: var(--muted-foreground); font-size: 11px; }
+.admin-income-total > span { color: var(--muted-foreground); font-size: 11px; }
+.admin-income-total p { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+.admin-income-total strong { font-size: clamp(20px, 2.5vw, 27px); font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.admin-income-total small { color: var(--muted-foreground); font-size: 11px; }
+.admin-income-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 26px; padding-top: 19px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
+.admin-income-meta > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.admin-income-meta small { font-size: 10px; }
+.admin-income-dot { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; border-radius: 3px; background: var(--primary); }
+.admin-income-scroll { max-width: 100%; margin-top: 12px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; scrollbar-color: var(--primary) var(--muted); }
+.admin-income-plot { width: 100%; height: 340px; }
+.admin-income-plot .recharts-surface { overflow: visible; }
+.admin-income-tooltip { min-width: 170px; padding: 13px 16px; border: 1px solid var(--border); border-radius: 13px; background: var(--card); box-shadow: 0 8px 30px #00000018; color: var(--foreground); text-align: right; font-size: 12px; }
+.admin-income-tooltip > p { margin-bottom: 12px; font-weight: 700; }
+.admin-income-tooltip > div { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 10px; }
+.admin-income-tooltip strong { display: block; margin-top: 6px; color: var(--primary); font-size: 17px; font-variant-numeric: tabular-nums; }
+.admin-income-tooltip small { color: var(--muted-foreground); font-size: 10px; font-weight: 400; }
+.admin-income-selection { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 11px; background: color-mix(in srgb, var(--primary) 4%, transparent); font-size: 11px; color: var(--muted-foreground); }
+.admin-income-selection strong { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 6px; color: var(--primary); font-size: 15px; font-variant-numeric: tabular-nums; }
+.admin-income-selection small { color: var(--muted-foreground); font-size: 10px; font-weight: 400; }
+.admin-income-hint { margin-top: 13px; color: var(--muted-foreground); font-size: 10px; line-height: 1.9; }
+.admin-income-empty { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; min-height: 230px; margin-top: 22px; border: 1px dashed var(--border); border-radius: 15px; color: var(--muted-foreground); text-align: center; font-size: 12px; }
+.admin-income-empty svg { color: var(--primary); }
+.admin-income-scroll:focus-visible, .admin-income-plot .recharts-wrapper:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+@media (max-width: 640px) {
+  .admin-income-card { padding: 16px; border-radius: 18px; }
+  .admin-income-heading { align-items: flex-start; gap: 18px; }
+  .admin-income-total { width: 100%; padding-right: 54px; }
+  .admin-income-meta { align-items: flex-start; flex-direction: column; margin-top: 20px; }
+  .admin-income-plot { height: 300px; }
+}

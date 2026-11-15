@@ -241,7 +241,7 @@ export function UserManagement() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-foreground sm:text-xl">
@@ -301,11 +301,20 @@ export function UserManagement() {
         <>
           <div className="hidden overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm xl:block">
             <div className="responsive-table-shell" role="region" aria-label="فهرست کاربران" tabIndex={0}>
-              <table className="w-full min-w-[64rem] whitespace-nowrap text-sm">
+              <table className="w-full table-fixed text-sm [&_td]:px-2 [&_td]:py-3 [&_td]:align-middle">
+                <colgroup>
+                  <col className="w-[22%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-28" />
+                  <col className="w-[7.5rem]" />
+                  <col />
+                  <col className="w-[6.25rem]" />
+                  <col className="w-[10.25rem]" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border/70 bg-muted/40">
                     {["نام کاربر", "نام کاربری", "کد ملی", "شماره تماس", "نقش", "وضعیت", "عملیات"].map((header) => (
-                      <th key={header} className="whitespace-nowrap px-4 py-3 text-right text-xs font-semibold text-muted-foreground">
+                      <th key={header} className="px-2 py-3 text-right text-xs font-semibold text-muted-foreground">
                         {header}
                       </th>
                     ))}
@@ -322,34 +331,34 @@ export function UserManagement() {
                         transition={{ delay: index * 0.02 }}
                         className="border-b border-border/40 transition-colors last:border-0 hover:bg-muted/30"
                       >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2.5">
+                        <td>
+                          <div className="flex min-w-0 items-center gap-2">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                               {(user.name || user.family || "ک")[0]}
                             </div>
-                            <span className="whitespace-nowrap font-medium text-foreground">
+                            <span className="min-w-0 [overflow-wrap:anywhere] font-medium leading-6 text-foreground">
                               {fullName(user)}
                             </span>
                           </div>
                         </td>
                         {[user.userName, user.nationalCode, user.phoneNumber].map((value, valueIndex) => (
-                          <td key={valueIndex} className="px-4 py-3 font-mono text-xs text-muted-foreground" dir="ltr">
+                          <td key={valueIndex} className="text-right font-mono text-xs leading-5 text-muted-foreground" dir="ltr">
                             {value || "-"}
                           </td>
                         ))}
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${roleStyle}`}>
+                        <td>
+                          <span className={`inline-flex max-w-full items-center [overflow-wrap:anywhere] rounded-full border px-2 py-0.5 text-xs font-medium leading-5 ${roleStyle}`}>
                             {user.roleName || "بدون نقش"}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${user.isActive ? statusStyles.active : statusStyles.inactive}`}>
+                        <td>
+                          <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium ${user.isActive ? statusStyles.active : statusStyles.inactive}`}>
                             {user.isActive ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <XCircle className="h-3 w-3 shrink-0" />}
                             {user.isActive ? "فعال" : "غیرفعال"}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
+                        <td>
+                          <div className="flex items-center gap-1.5 [&>button]:shrink-0">
                             <button type="button" onClick={() => setPasswordUser(user)} aria-label="تغییر رمز عبور" title="تغییر رمز عبور" className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground hover:border-amber-500/50 hover:bg-amber-500/5 hover:text-amber-600">
                               <KeyRound className="h-3.5 w-3.5" />
                             </button>

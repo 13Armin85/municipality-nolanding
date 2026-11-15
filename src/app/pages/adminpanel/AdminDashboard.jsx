@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { AdminMonthlyIncomeChart } from "./AdminMonthlyIncomeChart";
 import {
   Calendar,
   Archive,
@@ -152,54 +153,7 @@ export function Dashboard() {
             ))}
           </div>
 
-          <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-base font-bold text-foreground">
-                  جدول درآمد ماهانه
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  نمایش جزئیات درآمد هر ماه
-                </p>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[24rem] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3">ماه</th>
-                    <th className="px-4 py-3">سال</th>
-                    <th className="px-4 py-3">مبلغ (تومان)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {monthlyIncome.length > 0 ? (
-                    monthlyIncome.map((item, index) => (
-                      <tr
-                        key={`${item.year}-${item.month}-${index}`}
-                        className="border-b border-border/50"
-                      >
-                        <td className="px-4 py-3">{item.month}</td>
-                        <td className="px-4 py-3">{item.year}</td>
-                        <td className="px-4 py-3">
-                          {Number(item.amount).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="px-4 py-5 text-center text-sm text-muted-foreground"
-                      >
-                        داده‌ای برای نمایش درآمد ماهانه وجود ندارد.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <AdminMonthlyIncomeChart records={monthlyIncome} />
         </div>
       )}
     </div>
